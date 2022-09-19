@@ -1,0 +1,37 @@
+:root{
+    --mainBg: #414859;
+    --gameBg: #193f69;
+    --icon: 6rem;
+}
+
+.mainBg{
+    background-color: var(--mainBg);
+}
+
+.gameBg{
+    background-color: var(--gameBg);
+}
+
+.burger_img:hover{
+    opacity: .7;
+    cursor: pointer;
+}
+
+.border-grey{
+    border: 5px solid var(--mainBg);
+    /* border-color: var(--mainBg); */
+}
+
+.pro_icon{
+    width: var(--icon);
+    height: var(--icon);
+}
+
+.selectBtn:hover{
+    border: 2px solid skyblue;
+    transform: scale(1.01);
+}
+
+.selectCon, #side_page{
+    overflow-x: auto;
+}
