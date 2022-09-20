@@ -23,8 +23,7 @@
 }
 
 .pro_icon{
-    width: var(--icon);
-    height: var(--icon);
+    width: 95%;
 }
 
 .selectBtn:hover{
@@ -32,6 +31,8 @@
     transform: scale(1.01);
 }
 
-.selectCon, #side_page{
-    overflow-x: auto;
+.overflowCon, #side_page{
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 350px;
 }
