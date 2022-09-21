@@ -9,7 +9,7 @@ class GameStatus
         this.dataName = dataName;
         this.age = 0;
         this.days = 0;
-        this.money = 0;
+        this.money = 50000;
         this.clickCount = 0;
         this.incomePerClick = 25;
         this.incomePerSec = 0;
@@ -20,9 +20,8 @@ class GameStatus
 
 class ItemCard
 {
-    constructor(name, posAmount, price, proceeds, image, maxAmount, proceedType){
+    constructor(name, price, proceeds, image, maxAmount, proceedType){
         this.name = name;
-        this.posAmount = posAmount;
         this.price = price;
         this.proceeds = proceeds;
         this.proceedType = proceedType;
@@ -32,11 +31,11 @@ class ItemCard
 }
 
 let cardObjects = [
-    new ItemCard("Flip machine", 0, 15000, 25, "https://cdn.pixabay.com/photo/2019/06/30/20/09/grill-4308709_960_720.png", null, "click"),
-    new ItemCard("ETF Stock", 0, 300000, 0.1, "https://cdn.pixabay.com/photo/2016/03/31/20/51/chart-1296049_960_720.png", null, "sec"),
-    new ItemCard("ETF Bonds", 0, 300000, 0.07, "https://cdn.pixabay.com/photo/2016/03/31/20/51/chart-1296049_960_720.png", null, "sec"),
-    new ItemCard("Lemonade Stand", 0, 30000, 30, "https://cdn.pixabay.com/photo/2012/04/15/20/36/juice-35236_960_720.png", null, "click"),
-    new ItemCard("House", 0, 20000000, 32000, "https://cdn.pixabay.com/photo/2016/03/31/18/42/home-1294564_960_720.png", null, "click"),
+    new ItemCard("Flip machine", 15000, 25, "https://cdn.pixabay.com/photo/2019/06/30/20/09/grill-4308709_960_720.png", null, "click"),
+    new ItemCard("ETF Stock", 300000, 0.1, "https://cdn.pixabay.com/photo/2016/03/31/20/51/chart-1296049_960_720.png", null, "sec"),
+    new ItemCard("ETF Bonds", 300000, 0.07, "https://cdn.pixabay.com/photo/2016/03/31/20/51/chart-1296049_960_720.png", null, "sec"),
+    new ItemCard("Lemonade Stand", 30000, 30, "https://cdn.pixabay.com/photo/2012/04/15/20/36/juice-35236_960_720.png", null, "click"),
+    new ItemCard("House", 20000000, 32000, "https://cdn.pixabay.com/photo/2016/03/31/18/42/home-1294564_960_720.png", null, "click"),
 ];
 
 class View{
@@ -46,15 +45,22 @@ class View{
     }
     
     static displayBlock(ele){
-        ele.classList.add('d-none');
+        ele.classList.remove('d-none');
         ele.classList.add('d-block');
     }
 
+    static backToLogin(){
+        this.displayBlock(config.loginPage);
+        this.displayNone(config.gamePage);
+        config.gamePage.innerHTML = '';
+    }
+
     static toGamePage(dataName){
+        let user = JSON.parse(localStorage.getItem(dataName));
+        let startGame = Controller.startGame(user);
+
         let container = document.createElement('div');
         container.classList.add('gameBg', 'p-3', 'col-10', 'd-flex', 'flex-wrap', 'justify-content-around');
-        let playerData = localStorage.getItem(dataName);
-        let user = JSON.parse(playerData);
     
         //burgerCon
         let burgerCon = document.createElement('div');
@@ -69,13 +75,52 @@ class View{
         //statusCon
         let statusCon = this.createStatus(user);
         // purchaseCon
-        let purchaseCon = this.createItemCards(user);
+        let purchaseCon = document.createElement('div');
+        purchaseCon.id = "purchase_page";
+        purchaseCon.classList.add('overflowCon', 'col-12', 'p-1', 'border-grey', 'mainBg');
+        purchaseCon.append(this.createItemCards(user));
+        // savesection
+        let btnData = document.createElement('div');
+        btnData.id = "btnData";
+        btnData.classList.add('col-12', 'row', 'text-white');
+        btnData.append(this.createSaveBtn(user, startGame));
 
-        stPurchaseCon.append(statusCon, purchaseCon);
+        stPurchaseCon.append(statusCon, purchaseCon, btnData);
     
         container.append(burgerCon, stPurchaseCon);
         this.displayNone(config.loginPage);
+        this.displayBlock(config.gamePage);
         config.gamePage.append(container);
+    }
+
+    static createSaveBtn(user, startGame){
+        let container = document.createElement('div');
+        container.classList.add('col');
+        container.innerHTML = `
+            <button type="button" class="resetBtn btn fs-4">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+            <button type="button" class="saveBtn btn">
+                <i class="fa-solid fa-floppy-disk fs-4"></i>
+            </button>
+        `;
+
+        let reset = container.querySelectorAll('.resetBtn')[0];
+        reset.addEventListener('click', function(){
+            let approveal = confirm("Are you sure you want to Reset??");
+            if(!approveal) return false;
+            Controller.stopGame();
+            Controller.resetGame(user);
+        })
+
+        let save = container.querySelectorAll('.saveBtn')[0];
+        save.addEventListener('click', function(){
+            alert("Save your data successfully.");
+            Controller.stopGame();
+            Controller.saveGame(user);
+        })
+
+        return container;
     }
 
     static createBurger(user){
@@ -85,7 +130,7 @@ class View{
             <!-- descri -->
             <div class="gameBg text-center">
                 <h5>${user.clickCount} Burgers</h5>
-                <p>one click ${user.incomePerClick}</p>
+                <p>one click $${user.incomePerClick}</p>
             </div>
 
             <!-- burger_clicker -->
@@ -110,17 +155,17 @@ class View{
         status.innerHTML = 
         `
             <div class="p-2 col-6 border-grey" id="username">${user.dataName}</div>
-            <div class="p-2 col-6 border-grey" id="age">${user.age} years old</div>
+            <div class="p-2 col-6 border-grey" id="age">${Math.floor(user.age/365)} years old</div>
             <div class="p-2 col-6 border-grey" id="days">${user.days} days</div>
-            <div class="p-2 col-6 border-grey" id="asset">$${user.money}</div>
+            <div class="p-2 col-6 border-grey" id="asset">$${Math.floor(user.money)}</div>
         `;
         return status;
     }
     
     static createItemCards(user){
         let container = document.createElement('div');
-        container.id = "purchase_page";
-        container.classList.add('overflowCon', 'col-12', 'p-1', 'border-grey', 'mainBg');
+        container.classList.add('d-flex', 'flex-column', 'mb-2');
+        container.id = "select";
         container.innerHTML = "";
 
     
@@ -129,24 +174,22 @@ class View{
             let posAmount = user.purchase[name] == null ? 0 : user.purchase[name];
             let price = cardObjects[i].price;
             let proceeds = cardObjects[i].proceeds;
+            let proceedType = cardObjects[i].proceedType;
             let image = cardObjects[i].image;
-            console.log(image);
             container.innerHTML += 
             `
-                <div class="d-flex flex-column mb-2" id="select">
-                    <button type="button" class="selectBtn col-12 p-3 d-flex justify-content-between gameBg text-light" id="select_item">
-                        <div class="col-md-3">
-                            <img src="${image}" alt="" class="pro_icon img-responsive p-2" id="item_image">
-                        </div>
-                        <!-- descri -->
-                        <div class="col-12 col-md-8 p-2 d-flex flex-wrap ">
-                            <div class="col-6 mb-3">${name}</div id="item_name">
-                            <div class="col-6 mb-3" id="posAmount" id="posAmount">${posAmount}</div>
-                            <div class="col-6 mb-3" id="item_price">$${price}</div>
-                            <div class="col-6 mb-3" id="item_proceeds">$${proceeds}/click</div>
-                        </div>
-                    </button>
-                </div>
+                <button type="button" class="selectBtn col-12 p-3 d-flex justify-content-between gameBg text-light" id="select_item">
+                    <div class="col-md-3">
+                        <img src="${image}" alt="" class="pro_icon img-responsive p-2" id="item_image">
+                    </div>
+                    <!-- descri -->
+                    <div class="col-12 col-md-8 p-2 d-flex flex-wrap ">
+                        <div class="col-6 mb-3">${name}</div id="item_name">
+                        <div class="col-6 mb-3" id="posAmount" id="posAmount">${posAmount}</div>
+                        <div class="col-6 mb-3" id="item_price">$${price}</div>
+                        <div class="col-6 mb-3" id="item_proceeds">$${proceeds}/${proceedType}</div>
+                    </div>
+                </button>
             `;
         }
         console.log(container.querySelectorAll('#item_image')[0]);
@@ -157,7 +200,6 @@ class View{
             select_items[i].addEventListener('click', function(){
                 container.innerHTML = '';
                 container = View.createItemDetails(cardObjects[i], user);
-                // console.log("worked! " + i);
             })
         }
     
@@ -180,13 +222,6 @@ class View{
         purchaseInfo.classList.add('col-12', 'p-3', 'd-flex', 'justify-content-between', 'gameBg', 'text-light', 'border', 'mb-3');
         purchaseInput.classList.add('col-12', 'mb-3', 'text-light');
         purchaseBtn.classList.add('col-12', 'mb-3', 'd-flex', 'flex-row', 'justify-content-between');
-        // this.name = name;
-        // this.posAmount = posAmount;
-        // this.price = price;
-        // this.proceeds = proceeds;
-        // this.image = image;
-        // this.maxAmount = maxAmount;
-        // purchaseInfo.innerHTML
 
         purchaseInfo.innerHTML = 
         `
@@ -205,7 +240,7 @@ class View{
         `
             <label for="" class="form-label mb-2">How may would you like to buy</label>
             <input type="number" name="purchase_number" id="purchase_number" class="form-control" placeholder="0">
-            <p class="text-muted text-end">total: $0</p>
+            <p class="total text-muted text-end">total: $0</p>
         `; 
 
         purchaseBtn.innerHTML = 
@@ -216,9 +251,46 @@ class View{
 
         purchaseCon.append(detailCon);
 
+        // input
+        let inputPur = purchaseInput.querySelectorAll('input[name="purchase_number"]')[0];
+        inputPur.addEventListener('change', function(){
+            let totalP = purchaseInput.querySelectorAll(".total")[0];
+            let total = inputPur.value * parseInt(cardObject.price);
+            totalP.innerHTML = `total: $${total}`;
+        })
+
+        // backbtn
         document.getElementById('backBtn').onclick = function(){
             purchaseCon.innerHTML = '';
             purchaseCon.append(View.createItemCards(user));
+        };
+
+        // purchasebtn
+        document.getElementById('proceedBtn').onclick = function(){
+            let totalPurchase = cardObject.price * inputPur.value;
+            // console.log(typeof totalPurchase);
+            // console.log(typeof user.money);
+
+            if(user.money < totalPurchase){
+                alert("You don't have enough money");
+                return false;
+            }
+
+            purchaseCon.innerHTML = '';
+            user.money -= totalPurchase;
+            if(cardObject.proceedType == "click") user.incomePerClick += (cardObject.proceeds * inputPur.value);
+            else user.incomePerSec += cardObject.proceeds;
+            purchaseCon.append(View.createItemCards(user));
+
+            console.log(user.incomePerClick);
+            console.log(user.purchase);
+            if(user.purchase[cardObject.name] == null) user.purchase[cardObject.name] = parseInt(inputPur.value);
+            else user.purchase[cardObject.name] += parseInt(inputPur.value);
+            console.log(user.purchase);
+
+            View.updateBurgerCon(user);
+            View.updateUserStatus(user);
+            View.updateItemCards(user);
         };
 
         return purchaseCon;
@@ -235,13 +307,49 @@ class View{
         status.innerHTML = '';
         status.append(this.createStatus(user));
     }
+
+    static updateItemCards(user){
+        let purchase_page = document.getElementById('purchase_page');
+        purchase_page.innerHTML = '';
+        purchase_page.append(View.createItemCards(user));
+    }
 }
 
 class Controller{
+    startTimer;
+
+    static startGame(user){
+        this.startTimer = setInterval(function(){
+            user.money += user.incomePerSec;
+            user.age += 1;
+            user.days += 1;
+            View.updateUserStatus(user);
+        },1000);
+    }
+
+    static stopGame(){
+        clearInterval(this.startTimer);
+    }
+
+    static resetGame(user){
+        localStorage.removeItem(user.name);
+        // localStorage.clear();
+        View.backToLogin();
+    }
+
+    static saveGame(user){
+        console.log(user.dataName);
+        console.log(typeof user.dataName);
+        localStorage.removeItem(user.dataName);
+        let objEncoded = JSON.stringify(user);
+        localStorage.setItem(user.dataName, objEncoded);
+        console.log(localStorage.getItem(user.dataName));
+        View.backToLogin();
+    }
     
     static dataController(action){
         let dataName = config.loginPage.querySelectorAll('input[name="username"]').item(0);
-        console.log("Input data-" + dataName.value);
+        console.log("InputName: " + dataName.value);
 
         switch(action){
             case 'new':
@@ -251,9 +359,7 @@ class Controller{
                 }
         
                 let gamePlayer = new GameStatus(dataName.value);
-                console.log(gamePlayer);
-                console.log(gamePlayer.dataName);
-                // console.log(gamePlayer.increaseMoneyEvent(50));
+                console.log('New!');
                 let playerjsonEncoded = JSON.stringify(gamePlayer);
 
                 localStorage.setItem(dataName.value, playerjsonEncoded);
@@ -266,9 +372,9 @@ class Controller{
                     alert("Your does not exist");
                     return false;
                 }
-                let decoded = JSON.parse(result);
-                console.log(decoded);
-                console.log(decoded["dataName"]);
+                console.log('Login!!');
+                let decoded = JSON.parse(localStorage.getItem(dataName.value));
+                console.log("Login data " + decoded.days);
                 View.toGamePage(dataName.value);
                 dataName.value = "";
                 break;
@@ -277,7 +383,7 @@ class Controller{
 
     static updateByClickBurger(user){
         user.clickCount +=1;
-        user.money += 25;
+        user.money += user.incomePerClick;
         View.updateBurgerCon(user);
         View.updateUserStatus(user);
     }
